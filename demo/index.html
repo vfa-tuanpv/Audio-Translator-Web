@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Recognition Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        #recordBtn {
+            background: #4CAF50;
+            color: white;
+        }
+        #recordBtn.recording {
+            background: #f44336;
+        }
+        #stopBtn {
+            background: #ff9800;
+            color: white;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .status.active {
+            display: block;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.success {
+            display: block;
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        .status.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+        }
+        #result {
+            background: #f9f9f9;
+            padding: 20px;
+            border-left: 4px solid #4CAF50;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+            word-wrap: break-word;
+        }
+        .label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .time {
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Speech Recognition Demo</h1>
+        
+        <div style="margin: 20px 0; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <div>
+                <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Whisper Model:</label>
+                <select id="modelSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="base">Base (139MB) - Fast</option>
+                    <option value="small">Small (465MB) - Balanced</option>
+                    <option value="medium" selected>Medium (1.5GB) - Accurate</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Microphone:</label>
+                <select id="micSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Default Microphone</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Source Language:</label>
+                <select id="languageSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="vi">Vietnamese (Tiếng Việt)</option>
+                    <option value="en">English</option>
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="th">Thai (ไทย)</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Translate To:</label>
+                <select id="targetLanguage" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="zh">Chinese (中文)</option>
+                    <option value="en">English</option>
+                    <option value="vi">Vietnamese (Tiếng Việt)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="ko">Korean (한국어)</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">Voice:</label>
+                <select id="voiceSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Default</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="recordBtn">Record Audio</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <!-- Microphone Level Indicator -->
+        <div style="margin: 20px 0; display: none;" id="micLevelContainer">
+            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                🎙️ Microphone Level: <span id="micLevelValue" style="font-weight: bold;">0%</span>
+            </div>
+            <div style="width: 100%; height: 30px; background: #f0f0f0; border-radius: 4px; overflow: hidden; border: 1px solid #ddd;">
+                <div id="micLevelBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #4CAF50, #45a049); transition: width 0.1s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px;">
+                    <span id="micLevelText" style="color: white; font-size: 11px; font-weight: bold;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="result">
+            <div class="label">💬 Recognized Text:</div>
+            <div id="resultText" style="margin-bottom: 15px; font-size: 16px; color: #333;"></div>
+            
+            <div id="translationSection" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <div class="label">🌐 Translated Text:</div>
+                <div id="translatedText" style="margin-bottom: 10px; font-size: 16px; color: #1976d2; font-weight: bold;"></div>
+                <button id="playTranslationBtn" style="background: #2196F3; color: white; padding: 8px 16px; margin-top: 10px;">🔊 Play Translation</button>
+            </div>
+            
+            <div class="time" id="resultTime"></div>
+        </div>
+    </div>
+
+    <script src="../translator.js"></script>
+    <script src="speech-demo.js"></script>
+</body>
+</html>

@@ -17,4 +17,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   offHotkey: () => {
     ipcRenderer.removeAllListeners("hotkey-pressed");
   },
+
+  // Whisper.cpp transcription
+  transcribeWithWhisperCpp: (audioBuffer, language = "en", model = "medium") => {
+    return ipcRenderer.invoke("whisper-cpp-transcribe", audioBuffer, language, model);
+  },
 });
